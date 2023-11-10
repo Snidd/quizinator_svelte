@@ -2,8 +2,27 @@ import postgres from 'postgres';
 import type { PageServerLoad } from './$types';
 import { env } from '$env/dynamic/private';
 import type { Question } from '$lib/types/Question';
+import { fail, redirect } from '@sveltejs/kit';
 
-export const load = (async ({ params }) => {
+interface QuestionDb {
+	id: number;
+	text: string;
+	ingress: string | null;
+	order: string;
+}
+
+interface AnswerDb {
+	id: number;
+	text: string;
+}
+
+export const load = (async ({ params, parent }) => {
+	const parentData = await parent();
+
+	if (!parentData.loggedIn) {
+		throw redirect(302, '/user');
+	}
+
 	const dbUrl = env.DATABASE_URL;
 
 	if (dbUrl === undefined) throw new Error('Unable to connect to database!');
@@ -11,7 +30,7 @@ export const load = (async ({ params }) => {
 	const sql = postgres(dbUrl);
 
 	const questions = await sql<QuestionDb[]>`
-        select question_id, question_text, question_order from questions where question_id = ${params.questionId}
+        select * from questions where id = ${params.questionId}
     `;
 
 	if (!questions.length) {
@@ -19,7 +38,7 @@ export const load = (async ({ params }) => {
 	}
 
 	const answers = await sql<AnswerDb[]>`
-        select answer_id, answer_text from answers where question_id = ${questions[0].question_id}
+        select * from answers where question_id = ${questions[0].id}
     `;
 
 	if (!answers.length) {
@@ -27,13 +46,13 @@ export const load = (async ({ params }) => {
 	}
 
 	const question = {
-		id: questions[0].question_id,
-		text: questions[0].question_text,
-		ingress: 'Ingress',
+		id: questions[0].id,
+		text: questions[0].text,
+		ingress: questions[0].ingress,
 		answers: answers.map((answer) => {
 			return {
-				id: answer.answer_id,
-				text: answer.answer_text
+				id: answer.id,
+				text: answer.text
 			};
 		})
 	} satisfies Question;
@@ -41,13 +60,51 @@ export const load = (async ({ params }) => {
 	return question;
 }) satisfies PageServerLoad;
 
-interface QuestionDb {
-	question_id: number;
-	question_text: string;
-	question_order: string;
-}
+import type { Actions } from './$types';
 
-interface AnswerDb {
-	answer_id: number;
-	answer_text: string;
-}
+export const actions = {
+	default: async ({ request, params, cookies }) => {
+		const data = await request.formData();
+
+		const userId = cookies.get('userId');
+		const answerId = data.get('answerId');
+
+		console.log(`question: ${params.questionId} answerId: ${answerId} `);
+
+		//todo, store answer here and redirect to next question.
+
+		if (!userId || !answerId) {
+			return fail(500, { message: `Missing user: ${userId} or answer: ${answerId}` });
+		}
+
+		const dbUrl = env.DATABASE_URL;
+		const sql = postgres(dbUrl);
+
+		try {
+			await sql`
+				insert into user_answers
+				(user_id, question_id, answer_id)
+					values
+				(${userId}, ${params.questionId}, ${answerId.toString()})
+		  `;
+		} catch (err) {
+			return fail(500, { error: new String(err) });
+		}
+
+		const questions = await sql`
+			select questions.*, user_answers.answer_id
+			from questions 
+			left join user_answers on questions.id = user_answers.question_id and user_answers.user_id = ${userId}
+			where quiz_id = 6
+			and answer_id is null
+			order by "order"
+		`;
+
+		if (!questions.length) {
+			console.log(questions.length);
+			throw redirect(301, '/finished');
+		}
+
+		throw redirect(301, `/question/${questions[0].id}`);
+	}
+} satisfies Actions;

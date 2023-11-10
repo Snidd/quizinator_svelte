@@ -1,7 +1,7 @@
 export type Question = {
 	id: number;
 	text: string;
-	ingress: string;
+	ingress: string | null;
 	answers: Answer[];
 };
 
