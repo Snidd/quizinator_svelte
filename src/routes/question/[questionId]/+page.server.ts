@@ -4,18 +4,6 @@ import { env } from '$env/dynamic/private';
 import type { Question } from '$lib/types/Question';
 import { fail, redirect } from '@sveltejs/kit';
 
-interface QuestionDb {
-	id: number;
-	text: string;
-	ingress: string | null;
-	order: string;
-}
-
-interface AnswerDb {
-	id: number;
-	text: string;
-}
-
 export const load = (async ({ params, parent }) => {
 	const parentData = await parent();
 
@@ -61,6 +49,7 @@ export const load = (async ({ params, parent }) => {
 }) satisfies PageServerLoad;
 
 import type { Actions } from './$types';
+import type { AnswerDb, QuestionDb } from '$lib/db/dbTypes';
 
 export const actions = {
 	default: async ({ request, params, cookies }) => {
