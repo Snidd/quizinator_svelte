@@ -15,6 +15,16 @@
 			update();
 		};
 	};
+
+	const isPicked = (answerId: number): boolean => {
+		if (question.state.answered) {
+			return question.state.pickedAnswer === answerId;
+		}
+
+		return false;
+	};
+
+	let disabled = question.state.answered;
 </script>
 
 <div class="p-4">
@@ -24,12 +34,15 @@
 	</p>
 	<ul class="grid grid-cols-2 grid-rows-2 gap-2">
 		{#each question.answers as answer}
+			{@const picked = isPicked(answer.id)}
 			<form method="POST" class="w-full" use:enhance={onSubmit}>
 				<input type="hidden" name="answerId" value={answer.id} />
 				<button
 					type="submit"
-					disabled={submitting}
-					class="text-white disabled:text-gray-300 disabled:bg-gray-500 disabled:cursor-default disabled:hover:bg-gray-500 cursor-pointer w-full bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium text-xl rounded-lg px-5 py-8 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
+					disabled={submitting || disabled}
+					class="text-white disabled:text-gray-300 {picked
+						? 'disabled:bg-blue-700 disabled:hover:bg-blue-700'
+						: 'disabled:bg-gray-500 disabled:hover:bg-gray-500'} disabled:cursor-default cursor-pointer w-full bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium text-xl rounded-lg px-5 py-8 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
 				>
 					{answer.text}
 				</button>

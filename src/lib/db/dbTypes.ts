@@ -5,6 +5,10 @@ export interface QuestionDb {
 	order: string;
 }
 
+export interface QuestionDbWithAnswers extends QuestionDb {
+	answers: string;
+}
+
 export interface AnswerDb {
 	id: number;
 	text: string;

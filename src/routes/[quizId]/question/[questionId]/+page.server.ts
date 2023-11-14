@@ -1,21 +1,32 @@
 import postgres from 'postgres';
 import type { PageServerLoad } from './$types';
 import { env } from '$env/dynamic/private';
-import type { Question } from '$lib/types/Question';
+import type { Question, QuestionState } from '$lib/types/Question';
 import { fail, redirect } from '@sveltejs/kit';
 
 export const load = (async ({ params, parent }) => {
 	const parentData = await parent();
 
-	if (!parentData.loggedIn) {
+	if (!parentData.loggedIn || !parentData.userId) {
 		throw redirect(302, '/user');
 	}
 
-	const dbUrl = env.DATABASE_URL;
+	const sql = getDatabase();
 
-	if (dbUrl === undefined) throw new Error('Unable to connect to database!');
+	let state: QuestionState = {
+		answered: false
+	};
 
-	const sql = postgres(dbUrl);
+	const user_answers = await sql`
+		select answer_id from user_answers where user_id = ${parentData.userId} and question_id = ${params.questionId}
+	`;
+
+	if (user_answers.length > 0) {
+		state = {
+			answered: true,
+			pickedAnswer: user_answers[0].answer_id
+		};
+	}
 
 	const questions = await sql<QuestionDb[]>`
         select * from questions where id = ${params.questionId}
@@ -33,16 +44,21 @@ export const load = (async ({ params, parent }) => {
 		throw new Error('No answers found!');
 	}
 
-	const question = {
-		id: questions[0].id,
-		text: questions[0].text,
-		ingress: questions[0].ingress,
-		answers: answers.map((answer) => {
+	const shuffledAnswers = shuffle(
+		answers.map((answer) => {
 			return {
 				id: answer.id,
 				text: answer.text
 			};
 		})
+	);
+
+	const question = {
+		id: questions[0].id,
+		text: questions[0].text,
+		ingress: questions[0].ingress,
+		answers: shuffledAnswers,
+		state
 	} satisfies Question;
 
 	return question;
@@ -50,6 +66,9 @@ export const load = (async ({ params, parent }) => {
 
 import type { Actions } from './$types';
 import type { AnswerDb, QuestionDb } from '$lib/db/dbTypes';
+import { getDatabase } from '$lib/db/getDatabase';
+import { shuffle } from '$lib/components/shuffle';
+import { nextQuestion } from '$lib/components/nextQuestion';
 
 export const actions = {
 	default: async ({ request, params, cookies }) => {
@@ -80,20 +99,7 @@ export const actions = {
 			return fail(500, { error: new String(err) });
 		}
 
-		const questions = await sql`
-			select questions.*, user_answers.answer_id
-			from questions 
-			left join user_answers on questions.id = user_answers.question_id and user_answers.user_id = ${userId}
-			where quiz_id = 6
-			and answer_id is null
-			order by "order"
-		`;
-
-		if (!questions.length) {
-			console.log(questions.length);
-			throw redirect(301, '/finished');
-		}
-
-		throw redirect(301, `/question/${questions[0].id}`);
+		const nextUrl = await nextQuestion(sql, params.quizId, userId);
+		throw redirect(301, nextUrl);
 	}
 } satisfies Actions;

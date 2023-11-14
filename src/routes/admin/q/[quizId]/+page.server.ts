@@ -1,7 +1,7 @@
 import { error, fail } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { getDatabase } from '$lib/db/getDatabase';
-import type { QuestionDb, QuizDb } from '$lib/db/dbTypes';
+import type { QuestionDbWithAnswers, QuizDb } from '$lib/db/dbTypes';
 
 export const load = (async ({ params }) => {
 	const sql = getDatabase();
@@ -14,13 +14,31 @@ export const load = (async ({ params }) => {
 		throw error(404, 'Not found');
 	}
 
-	const questions = await sql<QuestionDb[]>`
-		select * from questions where quiz_id = ${quiz[0].id}
+	const questions = await sql<QuestionDbWithAnswers[]>`
+	select questions.text, questions.order, questions.ingress,  string_agg(answers.text, '|') as answers
+	from questions 
+	left join answers on questions.id = answers.question_id
+	where questions.quiz_id = ${quiz[0].id}
+	group by questions.id
+	order by "order"		
 	`;
+
+	if (!questions.length) {
+		return {
+			quiz: {
+				...quiz[0],
+				questions: [],
+				nextOrder: 0
+			}
+		};
+	}
+
+	const lastOrder = questions[questions.length - 1].order;
 
 	const return_quiz = {
 		...quiz[0],
-		questions: questions
+		questions: questions,
+		nextOrder: Number(lastOrder) + 10
 	};
 
 	return {

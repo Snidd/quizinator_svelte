@@ -1,7 +1,16 @@
 import type { Actions } from './$types';
 import { env } from '$env/dynamic/private';
 import postgres from 'postgres';
-import { fail } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
+
+import type { PageServerLoad } from './$types';
+
+export const load = (async ({ parent }) => {
+	const parentData = await parent();
+	if (parentData.loggedIn) {
+		throw redirect(301, '/');
+	}
+}) satisfies PageServerLoad;
 
 export const actions = {
 	default: async ({ request, getClientAddress, cookies }) => {

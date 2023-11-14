@@ -8,10 +8,28 @@
 <div class="p-4">
 	<h1 class="text-2xl font-bold pb-4">{data.quiz.description}</h1>
 	<ul class="flex flex-col gap-2 mb-4">
-		{#each data.quiz.questions as question}
+		{#each data.quiz.questions as question, index}
 			<li>
-				{#if question.ingress}<span class="font-bold pr-1">{question.ingress}.</span
-					>{/if}{question.text}
+				<p>
+					<span class="italic mr-2">{index + 1}</span>{#if question.ingress}<span
+							class="font-bold pr-1">{question.ingress}.</span
+						>{/if}{question.text}
+				</p>
+				<div class="pt-1">
+					{#each question.answers.split('|') as answer, answerIndex}
+						{@const isCorrect = answerIndex == 0}
+						<div
+							class="inline-flex mr-2 items-center px-3 py-1 text-sm font-medium text-center text-white {isCorrect
+								? 'bg-green-700'
+								: 'bg-gray-700'} rounded-lg focus:ring-4 {isCorrect
+								? 'hover:bg-green-800'
+								: 'hover:bg-gray-800'}"
+						>
+							{answer}
+						</div>
+					{/each}
+				</div>
+				<hr class="my-2 mx-2" />
 			</li>
 		{/each}
 	</ul>
@@ -20,7 +38,7 @@
 		method="post"
 		use:enhance
 	>
-		<input type="hidden" value="50" name="order" />
+		<input type="hidden" value={data.quiz.nextOrder} name="order" />
 		<div class="mb-0 col-span-2">
 			<label for="ingress" class="block mb-2 text-sm font-medium text-gray-900">Ingress</label>
 			<input
@@ -92,7 +110,7 @@
 		<div>
 			<button
 				type="submit"
-				class="inline-flex items-center px-5 py-2.5 text-sm font-medium text-center text-white bg-blue-700 rounded-lg focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900 hover:bg-blue-800"
+				class="inline-flex items-center px-5 py-2.5 text-sm font-medium text-center text-white bg-blue-700 rounded-lg focus:ring-4 focus:ring-blue-200 hover:bg-blue-800"
 			>
 				Publish Question
 			</button>
