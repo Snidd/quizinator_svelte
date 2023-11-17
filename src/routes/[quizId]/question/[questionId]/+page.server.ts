@@ -77,10 +77,6 @@ export const actions = {
 		const userId = cookies.get('userId');
 		const answerId = data.get('answerId');
 
-		console.log(`question: ${params.questionId} answerId: ${answerId} `);
-
-		//todo, store answer here and redirect to next question.
-
 		if (!userId || !answerId) {
 			return fail(500, { message: `Missing user: ${userId} or answer: ${answerId}` });
 		}

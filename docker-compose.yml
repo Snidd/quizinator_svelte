@@ -1,0 +1,21 @@
+# docker-compose.yml
+
+version: '3'
+
+services:
+  quizinator:
+    container_name: quizinator
+    # The name of the image that will be created when building this container
+    image: quizinator-website
+    build:
+      context: .
+      dockerfile: Dockerfile
+    user: 'node'
+    environment:
+      # Internal server error messages will not send stacktrace to the browser in production
+      - NODE_ENV=production
+      # Sets the timezone of the containers OS
+      - TZ=Europe/Stockholm
+    restart: unless-stopped
+    ports:
+      - 3000:5050

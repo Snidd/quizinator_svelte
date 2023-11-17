@@ -40,7 +40,7 @@
 				<button
 					type="submit"
 					disabled={submitting || disabled}
-					class="text-white disabled:text-gray-300 {picked
+					class="text-white break-words disabled:text-gray-300 {picked
 						? 'disabled:bg-blue-700 disabled:hover:bg-blue-700'
 						: 'disabled:bg-gray-500 disabled:hover:bg-gray-500'} disabled:cursor-default cursor-pointer w-full bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium text-xl rounded-lg px-5 py-8 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
 				>

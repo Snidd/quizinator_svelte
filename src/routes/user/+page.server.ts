@@ -5,11 +5,13 @@ import { fail, redirect } from '@sveltejs/kit';
 
 import type { PageServerLoad } from './$types';
 
-export const load = (async ({ parent }) => {
+export const load = (async ({ parent, cookies }) => {
 	const parentData = await parent();
 	if (parentData.loggedIn) {
 		throw redirect(301, '/');
 	}
+
+	return { userId: cookies.get('userId') };
 }) satisfies PageServerLoad;
 
 export const actions = {
@@ -41,13 +43,15 @@ export const actions = {
                 returning "id", "name", "unique"
               `;
 
-				cookies.set('userId', newUser[0].id.toString());
+				console.log(`returning set-cookies to userId:${newUser[0].id.toString()}`);
+				cookies.set('userId', newUser[0].id.toString(), { secure: false });
 
 				return {
 					success: true,
 					user: newUser[0]
 				};
 			} catch (err) {
+				console.log({ err });
 				return {
 					success: false,
 					message: 'You already have a user?'
@@ -58,12 +62,15 @@ export const actions = {
 		const existingUser = users.find((user) => user.unique === ipAddress);
 
 		if (existingUser) {
-			cookies.set('userId', existingUser.id.toString());
+			console.log(`returning set-cookies to userId:${existingUser.id.toString()}`);
+			cookies.set('userId', existingUser.id.toString(), { secure: false });
 			return {
 				success: true,
 				user: existingUser
 			};
 		}
+
+		console.log('user not found!');
 
 		return {
 			success: false,
