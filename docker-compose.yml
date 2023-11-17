@@ -1,12 +1,11 @@
 # docker-compose.yml
-
 version: '3'
 
 services:
   quizinator:
     container_name: quizinator
     # The name of the image that will be created when building this container
-    image: quizinator-website
+    image: quizinator
     build:
       context: .
       dockerfile: Dockerfile
