@@ -12,7 +12,10 @@ export function getDatabase() {
 	const dbUrl = env.DATABASE_URL;
 	if (dbUrl === undefined) throw new Error('Unable to connect to database!');
 
-	globalDatabase = postgres(dbUrl);
+	globalDatabase = postgres(dbUrl, {
+		idle_timeout: 10,
+		max_lifetime: 60 * 30,
+	})
 
 	return globalDatabase;
 }
