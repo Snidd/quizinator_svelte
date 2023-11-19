@@ -4,14 +4,14 @@ import { env } from '$env/dynamic/private';
 import type { Question, QuestionState } from '$lib/types/Question';
 import { fail, redirect } from '@sveltejs/kit';
 
-export const load = (async ({ params, parent }) => {
+export const load = (async ({ params, parent, locals }) => {
 	const parentData = await parent();
 
 	if (!parentData.loggedIn || !parentData.userId) {
 		throw redirect(302, '/user');
 	}
 
-	const sql = getDatabase();
+	const sql = locals.db;
 
 	let state: QuestionState = {
 		answered: false
@@ -44,8 +44,8 @@ export const load = (async ({ params, parent }) => {
 		throw new Error('No answers found!');
 	}
 
-	const shuffledAnswers = shuffle(
-		answers.map((answer) => {
+	const shuffledAnswers: AnswerDb[] = shuffle(
+		answers.map((answer: AnswerDb) => {
 			return {
 				id: answer.id,
 				text: answer.text
@@ -66,12 +66,11 @@ export const load = (async ({ params, parent }) => {
 
 import type { Actions } from './$types';
 import type { AnswerDb, QuestionDb } from '$lib/db/dbTypes';
-import { getDatabase } from '$lib/db/getDatabase';
 import { shuffle } from '$lib/components/shuffle';
 import { nextQuestion } from '$lib/components/nextQuestion';
 
 export const actions = {
-	default: async ({ request, params, cookies }) => {
+	default: async ({ request, params, cookies, locals }) => {
 		const data = await request.formData();
 
 		const userId = cookies.get('userId');
@@ -82,7 +81,7 @@ export const actions = {
 		}
 
 		const dbUrl = env.DATABASE_URL;
-		const sql = postgres(dbUrl);
+		const sql = locals.db;
 
 		try {
 			await sql`

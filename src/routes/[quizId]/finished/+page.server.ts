@@ -1,9 +1,8 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { getDatabase } from '$lib/db/getDatabase';
 import type { QuestionDb } from '$lib/db/dbTypes';
 
-export const load = (async ({ params, parent }) => {
+export const load = (async ({ params, parent, locals }) => {
 	const pData = await parent();
 
 	const userId = pData.userId;
@@ -12,7 +11,7 @@ export const load = (async ({ params, parent }) => {
 		throw redirect(301, '/user');
 	}
 
-	const sql = getDatabase();
+	const sql = locals.db;
 
 	const questionsAndAnswers = await sql<QuestionsAndAnswers[]>`
 		select questions.text, questions.order, questions.ingress,  string_agg(answers.text, '|') as answers, a2.text as picked_answer

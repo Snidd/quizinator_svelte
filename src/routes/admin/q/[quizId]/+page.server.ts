@@ -1,10 +1,9 @@
 import { error, fail } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { getDatabase } from '$lib/db/getDatabase';
 import type { QuestionDbWithAnswers, QuizDb } from '$lib/db/dbTypes';
 
-export const load = (async ({ params }) => {
-	const sql = getDatabase();
+export const load = (async ({ params, locals }) => {
+	const sql = locals.db;
 
 	const quiz = await sql<QuizDb[]>`
 		select * from quiz where id = ${params.quizId}
@@ -49,7 +48,7 @@ export const load = (async ({ params }) => {
 import type { Actions } from './$types';
 
 export const actions = {
-	default: async ({ request, params }) => {
+	default: async ({ request, params, locals }) => {
 		const data = await request.formData();
 
 		const text = data.get('text');
@@ -62,7 +61,7 @@ export const actions = {
 
 		const order = data.get('order');
 
-		const sql = getDatabase();
+		const sql = locals.db;
 
 		if (!text || !ingress || !answer_1 || !answer_2 || !answer_3 || !answer_4 || !order) {
 			return fail(500, { success: false, msg: 'Unknown error' });
@@ -72,9 +71,8 @@ export const actions = {
 			await sql`
 			WITH question_id AS (
 				INSERT INTO "questions" (ingress, "text", quiz_id, "order")
-				VALUES (${ingress.toString()}, ${text.toString()}, ${
-				params.quizId
-			}, ${order.toString()}) RETURNING "id"
+				VALUES (${ingress.toString()}, ${text.toString()}, ${params.quizId
+				}, ${order.toString()}) RETURNING "id"
 			)
 			
 			INSERT INTO answers ("text", is_correct, question_id)
