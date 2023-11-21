@@ -1,8 +1,7 @@
-import { getDatabase } from '$lib/db/getDatabase';
 import type { PageServerLoad } from './$types';
 
-export const load = (async ({ params }) => {
-	const sql = getDatabase();
+export const load = (async ({ params, locals }) => {
+	const sql = locals.db;
 
 	const quiz = await sql<ResultDb[]>`
     SELECT user_id, users.name, count(user_id) as correct_answers
