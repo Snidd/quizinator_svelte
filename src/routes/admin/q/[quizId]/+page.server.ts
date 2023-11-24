@@ -14,7 +14,7 @@ export const load = (async ({ params, locals }) => {
 	}
 
 	const questions = await sql<QuestionDbWithAnswers[]>`
-	select questions.text, questions.order, questions.ingress,  string_agg(answers.text, '|') as answers
+	select questions.text, questions.order, questions.ingress,  string_agg(answers.text, '|' order by is_correct desc) as answers
 	from questions 
 	left join answers on questions.id = answers.question_id
 	where questions.quiz_id = ${quiz[0].id}
@@ -71,8 +71,9 @@ export const actions = {
 			await sql`
 			WITH question_id AS (
 				INSERT INTO "questions" (ingress, "text", quiz_id, "order")
-				VALUES (${ingress.toString()}, ${text.toString()}, ${params.quizId
-				}, ${order.toString()}) RETURNING "id"
+				VALUES (${ingress.toString()}, ${text.toString()}, ${
+				params.quizId
+			}, ${order.toString()}) RETURNING "id"
 			)
 			
 			INSERT INTO answers ("text", is_correct, question_id)
